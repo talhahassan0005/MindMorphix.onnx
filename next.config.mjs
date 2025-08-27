@@ -11,19 +11,6 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Performance optimizations
-  experimental: {
-    optimizePackageImports: ['react-icons', 'lucide-react', 'framer-motion'],
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
-  },
-
   // Compression and optimization
   compress: true,
   poweredByHeader: false,
