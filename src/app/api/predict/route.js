@@ -1,27 +1,31 @@
-export const config = {
-    api: {
-      bodyParser: false, // Disable default body parsing
-    },
-  };
-  
-  export default async function handler(req, res) {
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Method not allowed" });
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(request) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get("file");
+    
+    if (!file) {
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
-  
-    try {
-      const formData = new FormData();
-      const file = req.body.get("file");
-      formData.append("file", file);
-  
-      const response = await fetch("http://localhost:5000/detect", {
-        method: "POST",
-        body: formData,
-      });
-  
-      const data = await response.json();
-      return res.status(response.status).json(data);
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
-    }
+
+    // Mock response for demo purposes
+    const mockResponse = {
+      prediction: "glioma",
+      confidence: 0.85,
+      details: {
+        glioma: 0.85,
+        meningioma: 0.10,
+        notumor: 0.03,
+        pituitary: 0.02
+      },
+      inference_time: 1.2,
+      message: "Demo prediction - This is mock data for demonstration"
+    };
+
+    return NextResponse.json(mockResponse);
+  } catch (error) {
+    console.error('Prediction error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
+}

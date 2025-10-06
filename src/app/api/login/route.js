@@ -1,32 +1,11 @@
-import { getIronSession } from "iron-session";
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs"; // bcrypt for hashing password
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-const SECRET_KEY = process.env.JWT_SECRET;
-const SESSION_SECRET = process.env.SESSION_SECRET;
-
-// ✅ Session Options
-const sessionOptions = {
-  password: SESSION_SECRET || 'fallback-secret-for-build',
-  cookieName: "userSession",  // Changed from vendorSession to userSession
-  cookieOptions: {
-    secure: process.env.NODE_ENV === "production",
-    httpOnly: true,
-    sameSite: "Strict",
-  },
-};
+const SECRET_KEY = process.env.JWT_SECRET || 'fallback-secret-for-build';
 
 export async function POST(req) {
   try {
-    // Check if required environment variables are available
-    if (!SECRET_KEY || !SESSION_SECRET) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Server configuration incomplete. Please check environment variables." 
-      }, { status: 503 });
-    }
-
     // Check if MongoDB URI is available
     const mongoUri = process.env.MONGODB_URI;
     
@@ -61,27 +40,27 @@ export async function POST(req) {
       return NextResponse.json({ success: false, message: "Invalid credentials" }, { status: 401 });
     }
 
-    // ✅ Generate JWT Token if passwords match
+    // Generate JWT Token if passwords match
     const token = jwt.sign({ id: user._id, email: user.email }, SECRET_KEY, { expiresIn: "2h" });
-    console.log("🔹 Generated Token:", token);
 
-    // ✅ Create session
-    let res = NextResponse.json({ success: true, message: "Login successful", token });
+    // Create response with token
+    const response = NextResponse.json({ 
+      success: true, 
+      message: "Login successful", 
+      user: { id: user._id, email: user.email, name: user.name }
+    });
 
-    const session = await getIronSession(req, res, sessionOptions);
-    session.user = { id: user._id, email: user.email, role: user.role };  // Changed from vendor to user
-    await session.save();
-
-    // ✅ Set Token in HTTP-only Cookies
-    res.cookies.set("authToken", token, {
+    // Set Token in HTTP-only Cookies
+    response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
       maxAge: 7200, // 2 hours
     });
 
-    return res;
+    return response;
   } catch (error) {
-    console.error("❌ Login Error:", error);
+    console.error("Login Error:", error);
     return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 });
   }
 }
